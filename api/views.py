@@ -154,7 +154,119 @@ class ProfileView(APIView):
         },status=status.HTTP_400_BAD_REQUEST
         )
 
+class ChangeEMailView(APIView):
+    permission_classes=[IsAuthenticated]
+    def post(self,request):
+        current_password = request.data.get("current_password")
+        new_email = request.data.get("current_password")
+        new_email_confirm = request.data.get("current_password")
+        
+        if not new_email or not new_email_confirm:
+            return Response(
+                {
+                    "detail": (
+                        "Mevcut E-Mail ve yeni E-Mail zorunludur."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        elif not current_password:
+            return Response(
+                {
+                    "detail": (
+                        "Mevcut şifre zorunludur."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        user = request.user
+        
+        if not user.check_password(current_password):
+            return Response(
+                {"current_password": ["Mevcut şifre yanlış."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
+        try:
+            validate_email(new_email)
+        except ValidationError:
+            return Response(
+                {"new_email": ["Geçerli bir e-posta adresi giriniz."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if (
+            User.objects.filter(email=new_email)
+            .exclude(pk=user.pk)
+            .exists()
+        ):
+            return Response(
+                {"new_email": ["Bu e-posta adresi zaten kullanımda."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user.email = new_email
+        user.save(update_fields=["email"])
+
+        return Response(
+            {"message": "E-posta adresi başarıyla değiştirildi."},
+            status=status.HTTP_200_OK,
+        )
+        
+        
+    
+    
+class ChangeUsernameView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        current_password = request.data.get("current_password")
+        new_username = request.data.get("new_username")
+
+        if not current_password or not new_username:
+            return Response(
+                {
+                    "detail": (
+                        "Mevcut şifre ve yeni kullanıcı adı zorunludur."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user = request.user
+
+        if not user.check_password(current_password):
+            return Response(
+                {"current_password": ["Mevcut şifre yanlış."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        username_field = user._meta.get_field("username")
+        try:
+            username_field.clean(new_username, user)
+        except ValidationError as exc:
+            return Response(
+                {"new_username": list(exc.messages)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if (
+            User.objects.filter(username=new_username)
+            .exclude(pk=user.pk)
+            .exists()
+        ):
+            return Response(
+                {"new_username": ["Bu kullanıcı adı zaten alınmış."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user.username = new_username
+        user.save(update_fields=["username"])
+
+        return Response(
+            {"message": "Kullanıcı adı başarıyla değiştirildi."},
+            status=status.HTTP_200_OK,
+        )
 
 class ChangePasswordView(APIView):
 
@@ -175,6 +287,12 @@ class ChangePasswordView(APIView):
             )
 
         user = request.user
+        if not user.check_password(current_password):
+            return Response(
+                {"current_password": ["Mevcut şifre yanlış."]},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
 
         if not user.check_password(current_password):
             return Response(
