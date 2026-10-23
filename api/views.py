@@ -111,8 +111,10 @@ class ProfileView(APIView):
             request.user
         )
 
-        return Response(
-            serializer.data
+        return Response({
+            "message":"User Profile Data",
+            "data": serializer.data
+        }
         )
 
 
@@ -125,7 +127,10 @@ class ProfileView(APIView):
 
     def get(self, request):
         serializer = UserSerializer(request.user)
-        return Response(serializer.data)
+        return Response({
+            "message":"Profile Information",
+            "data":serializer.data
+            })
 
     def patch(self, request):
         serializer = UserProfileUpdateSerializer(
@@ -137,14 +142,16 @@ class ProfileView(APIView):
         if serializer.is_valid():
             serializer.save()
 
-            return Response(
-                UserSerializer(request.user).data,
-                status=status.HTTP_200_OK
+            return Response({
+                "message":"User Profile Data Updated",
+                "data":UserSerializer(request.user).data
+            },status=status.HTTP_200_OK
             )
 
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
+        return Response({
+            "message":"Profile Update Failed.",
+            "error":serializer.errors
+        },status=status.HTTP_400_BAD_REQUEST
         )
 
 
@@ -213,7 +220,9 @@ class CategoryListView(APIView):
             many=True
         )
 
-        return Response(serializer.data)
+        return Response({
+            "data":serializer.data
+        })
 
     def post(self, request):
         serializer = CategorySerializer(
@@ -223,14 +232,17 @@ class CategoryListView(APIView):
         if serializer.is_valid():
             serializer.save()
 
-            return Response(
-                serializer.data,
+            return Response({
+                "message":"Category Created Succesfull",
+                "data":serializer.data
+                },
                 status=status.HTTP_201_CREATED
             )
 
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
+        return Response({
+            "message":"Category Create Failed",
+            "error":serializer.errors,
+        },status=status.HTTP_400_BAD_REQUEST
         )
 
 class CategoryDetailView(APIView):
@@ -277,11 +289,15 @@ class CategoryDetailView(APIView):
         if serializer.is_valid():
             serializer.save()
 
-            return Response(serializer.data)
+            return Response({
+                "message":"Category Detail Updated Succesfull.",
+                "data":serializer.data
+            },status=status.HTTP_200_OK)
 
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
+        return Response({
+            "message":"Category Detail Update Failed",
+            "error":serializer.errors,
+        },status=status.HTTP_400_BAD_REQUEST
         )
 
     def patch(self, request, category_id):
@@ -302,11 +318,15 @@ class CategoryDetailView(APIView):
         if serializer.is_valid():
             serializer.save()
 
-            return Response(serializer.data)
+            return Response({
+                "message":"Category Detail Updated Successfull",
+                "data":serializer.data
+            },status=status.HTTP_200_OK)
 
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
+        return Response({
+            "message":"Category Detail Update Failed",
+            "error":serializer.errors,
+        },status=status.HTTP_400_BAD_REQUEST
         )
 
     def delete(self, request, category_id):
@@ -457,14 +477,16 @@ class UserProductView(APIView):
             cache.clear()
 
 
-            return Response(
-                ProductSerializer(product).data,
-                status=status.HTTP_201_CREATED
+            return Response({
+                "message":"Product Created Successfull.",
+                "data":ProductSerializer(product).data,
+            },status=status.HTTP_201_CREATED
             )
 
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
+        return Response({
+            "message":"Product Create Failed",
+            "error":serializer.errors,
+        },status=status.HTTP_400_BAD_REQUEST
         )
 
 
@@ -503,11 +525,15 @@ class UserProductDetailView(APIView):
         if serializer.is_valid():
             serializer.save()
             cache.clear()
-            return Response(serializer.data)
+            return Response({
+                "message":"Product Detail Updated Successfull",
+                "data":serializer.data
+                },status=status.HTTP_200_OK)
 
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
+        return Response({
+            "message":"Product Detail Update Failed",
+            "error":serializer.errors
+        },status=status.HTTP_400_BAD_REQUEST
         )
 
     def patch(self, request, product_id):
@@ -529,8 +555,9 @@ class UserProductDetailView(APIView):
 
         product.delete()
         cache.clear()
-        return Response(
-            status=status.HTTP_204_NO_CONTENT
+        return Response({
+            "message":"Product Not Found."
+        },status=status.HTTP_204_NO_CONTENT
         )
 # PRODUCT IMAGES
 
@@ -614,9 +641,10 @@ class ProductImageListView(APIView):
         )
 
         serializer = ProductImageSerializer(image)
-        return Response(
-            serializer.data,
-            status=status.HTTP_201_CREATED,
+        return Response({
+            "message":"Product Image Created Successfull.",
+            "data":serializer.data
+        },status=status.HTTP_201_CREATED,
         )
 
 
@@ -656,14 +684,16 @@ class ProductImageDetailView(APIView):
         if serializer.is_valid():
             image = serializer.save()
 
-            return Response(
-                ProductImageSerializer(image).data,
-                status=status.HTTP_200_OK
+            return Response({
+                "message":"Product Image Updated Successfull.",
+                "data":ProductImageSerializer(image).data
+            },status=status.HTTP_200_OK
             )
 
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
+        return Response({
+            "message":"Product Image Update Failed",
+            "error":serializer.errors
+        },status=status.HTTP_400_BAD_REQUEST
         )
 
     def delete(self, request, product_id, image_id):
@@ -694,8 +724,9 @@ class ProductImageDetailView(APIView):
 
         image.delete()
 
-        return Response(
-            status=status.HTTP_204_NO_CONTENT
+        return Response({
+            "message":"Content Not"
+        },status=status.HTTP_204_NO_CONTENT
         )
         
 class FavoriteListView(APIView):
@@ -743,9 +774,10 @@ class FavoriteListView(APIView):
 
         serializer = FavoriteSerializer(favorite)
 
-        return Response(
-            serializer.data,
-            status=status.HTTP_201_CREATED
+        return Response({
+            "message":"Product created in favorites successfull",
+            "data":serializer.data
+        },status=status.HTTP_201_CREATED
         )
 
     def delete(self, request, product_id):
@@ -762,7 +794,9 @@ class FavoriteListView(APIView):
 
         favorite.delete()
 
-        return Response(
+        return Response({
+            "message":"Favorite not found."  
+        },
             status=status.HTTP_204_NO_CONTENT
         )
         
@@ -845,8 +879,9 @@ class CartView(APIView):
 
         serializer = CartItemSerializer(cart_item)
 
-        return Response(
-            serializer.data,
+        return Response({
+            "message":"Cart Created Successfull.",
+            "data":serializer.data},
             status=status.HTTP_201_CREATED
         )
 
@@ -907,7 +942,9 @@ class CartItemDetailView(APIView):
 
         serializer = CartItemSerializer(cart_item)
 
-        return Response(serializer.data)
+        return Response({
+            "data":serializer.data
+        })
 
     def delete(self, request, item_id):
         cart_item = self.get_cart_item(
