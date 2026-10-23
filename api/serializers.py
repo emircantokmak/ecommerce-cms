@@ -119,6 +119,7 @@ class ProductImageSerializer(serializers.ModelSerializer):
 
         return super().update(instance, validated_data)
 
+
 class ProductSerializer(serializers.ModelSerializer):
 
     user = serializers.ReadOnlyField(source="user.username")
@@ -137,7 +138,8 @@ class ProductSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "is_active",
-            "images" # EKLENDİ
+            "is_featured",
+            "images"
         ]
 
         read_only_fields = [
@@ -145,9 +147,10 @@ class ProductSerializer(serializers.ModelSerializer):
             "user",
             "created_at",
             "updated_at",
-            "images" # EKLENDİ
+            "is_featured",
+            "images"
         ]
-        
+
 class FavoriteSerializer(serializers.ModelSerializer):
     product = ProductSerializer(read_only=True)
 

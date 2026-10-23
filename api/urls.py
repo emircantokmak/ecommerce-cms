@@ -18,7 +18,9 @@ from .views import (
     CartItemCreateView,
     CartItemDetailView,
     ChangeEMailView,
-    ChangeUserNameView
+    ChangeUserNameView,
+    FeaturedProductListView,
+    FeaturedProductDetailView,
 )
 
 
@@ -90,7 +92,16 @@ urlpatterns = [
         UserProductDetailView.as_view(),
         name="user-product-detail",
     ),
-
+    path(
+        "products/featured/",
+        FeaturedProductListView.as_view(),
+        name="featured-products",
+    ),
+    path(
+        "products/featured/<int:product_id>/",
+        FeaturedProductDetailView.as_view(),
+        name="featured-product-detail",
+    ),
     # PRODUCT IMAGES
     path(
         "user/products/<int:product_id>/images/",

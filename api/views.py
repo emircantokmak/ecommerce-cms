@@ -852,6 +852,147 @@ class ProductImageDetailView(APIView):
         },status=status.HTTP_204_NO_CONTENT
         )
         
+
+
+class FeaturedProductListView(APIView):
+    """
+    Öne çıkarılmış ürünleri listeler.
+    Admin kullanıcı yeni öne çıkarılmış ürün oluşturabilir.
+    """
+
+    def get_permissions(self):
+        if self.request.method == "POST":
+            return [IsAdminUser()]
+        return [AllowAny()]
+
+    def get(self, request):
+        products = Product.objects.filter(
+            is_active=True,
+            is_featured=True
+        ).select_related(
+            "category",
+            "user"
+        ).prefetch_related(
+            "images"
+        ).order_by(
+            "-created_at",
+            "-id"
+        )
+
+        serializer = ProductSerializer(products, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = ProductSerializer(data=request.data)
+
+        if serializer.is_valid():
+            product = serializer.save(
+                user=request.user,
+                is_featured=True
+            )
+
+            return Response(
+                ProductSerializer(product).data,
+                status=status.HTTP_201_CREATED
+            )
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+class FeaturedProductDetailView(APIView):
+    """
+    Admin:
+    - PUT/PATCH: Öne çıkarılmış ürünü günceller.
+    - DELETE: Ürünü öne çıkarılmış listesinden kaldırır.
+    """
+
+    permission_classes = [IsAdminUser]
+
+    def get_product(self, product_id):
+        return Product.objects.filter(
+            id=product_id,
+            is_featured=True
+        ).first()
+
+    def put(self, request, product_id):
+        product = self.get_product(product_id)
+
+        if product is None:
+            return Response(
+                {"detail": "Öne çıkarılmış ürün bulunamadı."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = ProductSerializer(
+            product,
+            data=request.data
+        )
+
+        if serializer.is_valid():
+            updated_product = serializer.save(
+                is_featured=True
+            )
+
+            return Response(
+                ProductSerializer(updated_product).data,
+                status=status.HTTP_200_OK
+            )
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    def patch(self, request, product_id):
+        product = self.get_product(product_id)
+
+        if product is None:
+            return Response(
+                {"detail": "Öne çıkarılmış ürün bulunamadı."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = ProductSerializer(
+            product,
+            data=request.data,
+            partial=True
+        )
+
+        if serializer.is_valid():
+            updated_product = serializer.save(
+                is_featured=True
+            )
+
+            return Response(
+                ProductSerializer(updated_product).data,
+                status=status.HTTP_200_OK
+            )
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    def delete(self, request, product_id):
+        product = self.get_product(product_id)
+
+        if product is None:
+            return Response(
+                {"detail": "Öne çıkarılmış ürün bulunamadı."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        product.is_featured = False
+        product.save(update_fields=["is_featured"])
+
+        return Response(
+            {"detail": "Ürün öne çıkarılmış listesinden kaldırıldı."},
+            status=status.HTTP_200_OK
+        )
+
 class FavoriteListView(APIView):
     permission_classes = [IsAuthenticated]
 
