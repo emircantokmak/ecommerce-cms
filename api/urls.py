@@ -42,6 +42,16 @@ urlpatterns = [
         ChangePasswordView.as_view(),
         name="change-password",
     ),
+    path(
+        "user/change-email/",
+        ChangeEMailView.as_view(),
+        name="change-password",
+    ),
+    path(
+        "user/change-username/",
+        ChangeUserNameView.as_view(),
+        name="change-password",
+    ),
 
     # CATEGORIES
     path(
