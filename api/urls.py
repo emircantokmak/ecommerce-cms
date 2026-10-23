@@ -17,6 +17,8 @@ from .views import (
     CartView,
     CartItemCreateView,
     CartItemDetailView,
+    ChangeEMailView,
+    ChangeUserNameView
 )
 
 

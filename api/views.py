@@ -8,10 +8,14 @@ from api.supabase_storage import delete_product_image
 from api.supabase_storage import upload_product_image
 from .permissions import IsProductOwner
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.core.exceptions import ValidationError
 
 from django.core.cache import cache
 from hashlib import md5
 
+from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError  
+from django.core.validators import validate_email 
 from .serializers import (
     CartItemSerializer,
     CartSerializer,
@@ -28,6 +32,7 @@ from .models import Cart, CartItem, Category, Favorite, Product, ProductImage
 
 from .filters import ProductFilter
 
+User = get_user_model()
 
 class RegisterView(APIView):
 
@@ -158,14 +163,14 @@ class ChangeEMailView(APIView):
     permission_classes=[IsAuthenticated]
     def post(self,request):
         current_password = request.data.get("current_password")
-        new_email = request.data.get("current_password")
-        new_email_confirm = request.data.get("current_password")
+        new_email = request.data.get("new_email")
+        new_email_confirm = request.data.get("new_email_confirm")
         
         if not new_email or not new_email_confirm:
             return Response(
                 {
                     "detail": (
-                        "Mevcut E-Mail ve yeni E-Mail zorunludur."
+                        "Yeni E-Mail ve yeni  doğrulama E-Mail zorunludur."
                     )
                 },
                 status=status.HTTP_400_BAD_REQUEST
@@ -217,7 +222,7 @@ class ChangeEMailView(APIView):
         
     
     
-class ChangeUsernameView(APIView):
+class ChangeUserNameView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
