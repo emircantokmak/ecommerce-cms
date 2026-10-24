@@ -66,20 +66,30 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
-
-
-CACHES = {
     "default": {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-        "LOCATION": "drf-ecommerce-cache",
-        "TIMEOUT": 60,
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": Path(
+            os.getenv("SQLITE_PATH", BASE_DIR / "db.sqlite3")
+        ),
     }
 }
+
+if os.getenv("REDIS_URL"):
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": os.getenv("REDIS_URL"),
+            "TIMEOUT": 60,
+        }
+    }
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "drf-ecommerce-cache",
+            "TIMEOUT": 60,
+        }
+    }
 
 
 # Password validation
