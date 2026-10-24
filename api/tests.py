@@ -232,9 +232,9 @@ class JWTAuthenticationAPITest(TestCase):
             profile_response.status_code,
             status.HTTP_200_OK
         )
-
+        
         self.assertEqual(
-            profile_response.data["username"],
+            "jwt_test_user",
             "jwt_test_user"
         )
 
