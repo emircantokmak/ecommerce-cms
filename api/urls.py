@@ -21,6 +21,7 @@ from .views import (
     ChangeUserNameView,
     FeaturedProductListView,
     FeaturedProductDetailView,
+    VerifyEMailView
 )
 
 
@@ -30,6 +31,11 @@ urlpatterns = [
         "user/register/",
         RegisterView.as_view(),
         name="register",
+    ),
+    path(
+        "user/verify-email/",
+        VerifyEMailView.as_view(),
+        name="verify-email"
     ),
     path(
         "user/login/",

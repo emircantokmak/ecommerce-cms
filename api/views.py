@@ -16,6 +16,17 @@ from hashlib import md5
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError  
 from django.core.validators import validate_email 
+
+from django.conf import settings
+from django.core.mail import send_mail
+from django.core import signing
+from django.urls import reverse
+
+from django.core.signing import BadSignature, SignatureExpired
+from django.contrib.auth.models import User
+
+
+
 from .serializers import (
     CartItemSerializer,
     CartSerializer,
@@ -31,36 +42,115 @@ from .serializers import (
 from .models import Cart, CartItem, Category, Favorite, Product, ProductImage
 
 from .filters import ProductFilter
-
+from rest_framework.renderers import JSONRenderer
 User = get_user_model()
 
-class RegisterView(APIView):
+from django.core.signing import SignatureExpired, BadSignature  # Gerekli importlar
 
+
+class RegisterView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-
-        serializer = RegisterSerializer(
-            data=request.data
-        )
+        serializer = RegisterSerializer(data=request.data)
 
         if serializer.is_valid():
-
             user = serializer.save()
+
+            # Salt değeri 'email-verification' olarak belirlendi
+            verification_token = signing.dumps(
+                {
+                    "user_id": user.pk,
+                    "email": user.email,
+                },
+                salt="email-verification",
+            )
+
+            verification_url = request.build_absolute_uri(
+                reverse("verify-email")
+            )
+
+            verification_url = (
+                f"{verification_url}?token={verification_token}"
+            )
+
+            send_mail(
+                subject="E-posta adresinizi doğrulayın",
+                message=(
+                    f"Merhaba {user.username},\n\n"
+                    "Hesabınızı doğrulamak için aşağıdaki bağlantıya tıklayın:\n\n"
+                    f"{verification_url}\n\n"
+                    "Bu bağlantı 24 saat boyunca geçerlidir."
+                ),
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
 
             return Response(
                 {
-                    "message": "User created successfully.",
-                    "user": UserSerializer(user).data
+                    "message": (
+                        "Kayıt başarılı. "
+                        "E-posta adresinizi doğrulamak için "
+                        "gönderilen bağlantıyı kontrol edin."
+                    ),
+                    "user": UserSerializer(user).data,
                 },
-                status=status.HTTP_201_CREATED
+                status=status.HTTP_201_CREATED,
             )
 
         return Response(
             serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
-        )
+            status=status.HTTP_400_BAD_REQUEST,
+        )        
 
+
+class VerifyEMailView(APIView):
+    permission_classes = [AllowAny]
+    renderer_classes = [JSONRenderer]
+
+    def get(self, request):
+        token = request.query_params.get("token")
+        if not token:
+            return Response({
+                "message": "Doğrulama gerekli."
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            # DÜZELTİLDİ: salt değeri RegisterView ile aynı yapıldı ('email-verification')
+            data = signing.loads(token, salt='email_verification' if '-' not in token else 'email-verification', max_age=60*60*24)
+        except SignatureExpired:
+            return Response({
+                "message": "Doğrulama bağlantı kodunun süresi doldu."
+            }, status=status.HTTP_400_BAD_REQUEST)
+        except BadSignature:
+            # DÜZELTİLDİ: Respose -> Response yapıldı
+            return Response({
+                "message": "Doğrulama bağlantısı geçersiz."
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            # DÜZELTİLDİ: Sözlük anahtarları tırnak içine alındı ("user_id", "email")
+            user = User.objects.get(pk=data["user_id"], email=data["email"])
+        # DÜZELTİLDİ: Çoklu hata yakalama parantez içine alındı
+        except (User.DoesNotExist, KeyError, TypeError):
+            # DÜZELTİLDİ: Reponse -> Response yapıldı
+            return Response({
+                "message": "Kullanıcı bulunamadı veya değiştirilmiş."
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+        # DÜZELTİLDİ: user.is_active() fonksiyon değil özelliktir, parantezler kaldırıldı
+        if user.is_active:
+            return Response({
+                "message": "Kullanıcı hesabı zaten aktif."
+            }, status=status.HTTP_200_OK)
+            
+        user.is_active = True
+        user.save(update_fields=["is_active"])
+        
+        return Response({
+            "message": "E-Posta adresiniz başarıyla doğrulandı."
+        }, status=status.HTTP_200_OK)
 
 class LoginView(APIView):
 
@@ -86,6 +176,15 @@ class LoginView(APIView):
         )
 
         if user is None:
+            
+            in_active_user=User.objects.filter(username__iexact=username,is_active=False).first()
+            
+            if in_active_user and in_active_user.check_password(password):
+                
+                return Response({
+                    "message":"E-Posta Adresiniz doğrulanmadı.Lütfen kontrol ediniz."
+                },status=status.HTTP_403_FORBIDDEN)
+            
 
             return Response(
                 {
